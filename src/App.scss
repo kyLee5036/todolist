@@ -35,7 +35,8 @@ header h1 {
 }
 
 .product > h2 {
-  margin-bottom: 15px;
+  margin-bottom: 30px;
+  margin-top: 15px;
   font-size: 30px;
 }
 
@@ -58,6 +59,9 @@ header h1 {
   font-weight: bold;
   border-bottom: 1px solid #EFEFEF;
   padding-bottom: 10px;
+  overflow: auto;
+  word-break: break-all;
+  max-height: 63px;
 }
 
 .tag {
@@ -109,6 +113,8 @@ header h1 {
 
 // modal
 .modal-main {
+  width: 350px;
+  margin-bottom: 15px;
 }
 
 .modal-footer {
@@ -120,30 +126,28 @@ header h1 {
   height: 30px;
   border: 1px solid;
   margin-bottom: 15px;
-  width: 298px;
+  width: 317px;
   padding: 0px 15px;
 }
 
 .modal-btn-tag-add {
-  border: none;
-  width: 81px;
-  height: 49px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  margin-bottom: 15px;
-  background-color: #00000052;
+  margin-bottom: 5px;
   font-size: 35px;
-
+  border: 1px solid;
 }
 
 
-.modal-btn-cancel{
+.modal-btn-cancel {
   width: 100px;
   height: 50px;
   margin-right: 7px;
   border-radius: 15px;
 }
 
-.modal-btn-ok{
+.modal-btn-ok {
   width: 100px;
   height: 50px;
   margin-left: 7px;
@@ -164,4 +168,34 @@ header h1 {
   &:hover {
     background-color: #00000052;
   }
+}
+
+.modal-task-layout {
+  overflow: auto;
+  word-break: break-all;
+  max-height: 150px;
+}
+
+.modal-selected-tag-layout {
+  width: 331px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.modal-selected-tag {
+  margin-bottom: 5px;
+  padding: 15px;
+  background-color: #F7F7F7;
+  display: inline-block;
+  margin-right: 7px;
+  border-radius: 15px;
+}
+
+.modal-tag-filter-layout {
+  margin: 15px 0px;
+  overflow: auto;
+  word-break: break-all;
+  max-height: 150px;
 }

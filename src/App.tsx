@@ -1,93 +1,43 @@
-import React, { useCallback, useState, useMemo } from 'react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import Modal from 'react-modal';
+/* eslint-disable array-callback-return */
+import React, { useCallback, useMemo, useState } from 'react';
 
 import './App.scss';
+import Card from './components/Card/index';
+import ModalTag from './components/Modal/tag';
+import ModalTask from './components/Modal/task';
+import ModalTagFilter from './components/Modal/tagFilter';
+import ModalTagFilterSearchResult from './components/Modal/tagFilterSearchResult';
 
-const customStyles = {
-	overlay: {
-		backgroundColor: '#000000ab',
-	},
-	content: {
-		top: '50%',
-		left: '50%',
-		right: 'auto',
-		bottom: 'auto',
-		marginRight: '-50%',
-		transform: 'translate(-50%, -50%)',
-		minWidth: '331px',
-	},
-};
-
-const todoData = [
-	{
-		title: '',
-		todoItem: [
-			{
-				label: 'task1',
-				tag: ['tag1_1', 'tag1_2', 'tag1_3', 'tag4_3', 'asjkfhdsjfhdf', 'asd', '435iouasd'],
-			},
-			{
-				label: 'task2',
-				tag: ['tag2_2', 'tag2_2', 'tag2_3'],
-			},
-		],
-	},
-	{
-		title: '',
-		todoItem: [],
-	},
-	{
-		title: '',
-		todoItem: [
-			{
-				label: 'task1',
-				tag: [],
-			},
-			{
-				label: 'task1',
-				tag: ['tag244_2', 'tag2123_2', 'tag223_3'],
-			},
-			{
-				label: 'task23',
-				tag: [],
-			},
-		],
-	},
-	{
-		title: '',
-		todoItem: [
-			{
-				label: 'task1',
-				tag: [],
-			},
-		],
-	},
-];
-
-export interface ITodoList {
-	title: string;
-	todoItem: {
-		label: string;
-		tag: string[];
-	}[];
-}
+import { ITodoItem, ITodoList, toDoListDummyData } from './util/type';
 
 const App = () => {
 	// TodoListのデータ
-	const [todoList, setTodoList] = useState<ITodoList[]>(todoData);
-	const [productIndex, setProductIndex] = useState(0);
-	// タスクののモーダル(true: モーダルON、false：モーダルOFF)
+	const [todoList, setTodoList] = useState<ITodoList[]>(toDoListDummyData);
+	const [selectedProductIndex, setSelectedProductIndex] = useState(0);
+	// タスクののモーダル (true: モーダルON、false：モーダルOFF)
 	const [isTaskModal, setIsTaskModal] = useState(false);
-	// タグ入力のモーダル(true: モーダルON、false：モーダルOFF)
-	const [isTagInputModal, setIsTagInputModal] = useState(false);
+	// タグ入力のモーダル (true: モーダルON、false：モーダルOFF)
+	const [isTagModal, setIsTagModal] = useState(false);
+	// タグフィルタリングのモーダル (true: モーダルON、false：モーダルOFF)
+	const [isTagFilter, setIsTagFilter] = useState(false);
+	// タグフィルタリングのモーダル (true: モーダルON、false：モーダルOFF)
+	const [isTagFilterSearchResult, setIsTagFilterSearchResult] = useState(false);
 	// タグ入力画面の検索のテキスト
-	const [searchTag, setSearchTag] = useState('');
+	const [textTag, setTextTag] = useState('');
+	// タグリスト
+	const [tag, setTag] = useState<string[]>([]);
+	// タスクのテキスト
+	const [textTask, setTextTask] = useState('');
+	// タグフィルターのテキスト
+	const [tagFilterText, setTagFilterText] = useState('');
+	// タグフィルターのリスト
+	const [tagFilterList, setTagFilterList] = useState<string[]>([]);
+	// 絞り込むの結果のリスト
+	const [tagFilterResult, setTagFilterResult] = useState<ITodoItem[]>([]);
 
 	const tagList = useMemo(() => {
 		const list: string[] = [];
-		const todo = todoList;
+		const todo = [...todoList];
 		todo
 			.filter((todoIItem) => todoIItem.todoItem.length > 0)
 			.map((item) => {
@@ -106,146 +56,249 @@ const App = () => {
 		return result;
 	}, [todoList]);
 
+	/**
+	 * タスクの「+：追加」ボタンを押下時のイベントハンドル
+	 * @param {number} index タスクのn番目のインデクス
+	 */
 	const onClickButtonAdd = useCallback(
 		(index: number) => (eve: React.MouseEvent<HTMLElement>) => {
 			setIsTaskModal(true);
-			setProductIndex(index);
+			setSelectedProductIndex(index);
 		},
 		[],
 	);
 
+	/**
+	 * タスクのモダールで「Cancel：キャンセル」ボタンを押下時のイベントハンドル
+	 */
 	const onClickCancel = useCallback(() => {
 		setIsTaskModal(false);
+		setTag([]);
+		setTextTag('');
+		setTextTask('');
 	}, []);
 
+	/**
+	 * タスクのモダールで「OK：確認」ボタンを押下時のイベントハンドル
+	 */
 	const onClickOK = useCallback(() => {
-		console.log(productIndex);
 		const deepCopyTodoList = todoList.map((value) => {
 			return { ...value };
 		});
 		const addItem = {
-			label: '',
-			tag: [],
+			label: textTask,
+			tag,
 		};
-		deepCopyTodoList[productIndex].todoItem.concat(addItem);
+		deepCopyTodoList[selectedProductIndex].todoItem.push(addItem);
 		setTodoList(deepCopyTodoList);
 		setIsTaskModal(false);
-	}, [productIndex, todoList]);
+		setTag([]);
+		setTextTag('');
+		setTextTask('');
+	}, [selectedProductIndex, todoList, tag, textTask]);
 
-	const onClickTaskInput = useCallback(() => {
+	/**
+	 * タグの「+:追加」のボタンを押下時のイベントハンドル
+	 */
+	const onClickTagItemAdd = useCallback(() => {
 		setIsTaskModal(false);
-		setIsTagInputModal(true);
+		setIsTagModal(true);
 	}, []);
 
 	/**
-	 * タグ入力画面のバッググラウンドを押下時のイベントハンドル
+	 * タスクのテキストの入力時のイベントハンドル
 	 */
-	// const onRequestClose = useCallback((eve: React.MouseEvent<HTMLElement>) => {
-	// 	eve.stopPropagation();
-	// 	setIsTagInputModal(false);
-	// }, []);
+	const onChangeTextTask = useCallback((eve: React.ChangeEvent<HTMLInputElement>) => {
+		setTextTask(eve.target.value);
+	}, []);
 
 	/**
 	 * タグ入力画面の検索のテキストを入力時のイベントハンドル
 	 */
-	const onChangeSearchTag = useCallback((eve: React.ChangeEvent<HTMLInputElement>) => {
-		// tagList.filter((list) => list.includes(eve.target.value) === true).slice(0, 10);
-		setSearchTag(eve.target.value);
+	const onChangeTextTag = useCallback((eve: React.ChangeEvent<HTMLInputElement>) => {
+		setTextTag(eve.target.value);
 	}, []);
 
+	/**
+	 * タグモーダルの作成ボタンを押下時のイベントハンドル
+	 */
 	const onClickTagCreate = useCallback(() => {
-		console.log('ad');
+		if (!textTag || textTag.trim().length === 0) return;
+		setTag((prev) => prev.concat(textTag));
+		setIsTagModal(false);
+		setIsTaskModal(true);
+		setTextTag('');
+	}, [textTag]);
+
+	/**
+	 * タグモーダルでタグを選択した時のイベントハンドル
+	 */
+	const onClickTagItem = useCallback(
+		(item: string) => () => {
+			setTag((prev) => prev.concat(item));
+			setIsTagModal(false);
+			setIsTaskModal(true);
+			setTextTag('');
+		},
+		[],
+	);
+
+	/**
+	 * タグフィルターを選択した時のイベントハンドル
+	 */
+	const onClickTagFilter = useCallback(() => {
+		setIsTagFilter(true);
+	}, []);
+
+	/**
+	 * フィルターのテキストを入力時のイベントハンドル
+	 */
+	const onChangeTagFilterText = useCallback((eve: React.ChangeEvent<HTMLInputElement>) => {
+		setTagFilterText(eve.target.value);
+	}, []);
+
+	/**
+	 * 絞り込むボタンを押下時のイベントハンドル
+	 */
+	const onClickTagFilterItem = useCallback(
+		(item: string) => () => {
+			const result = tagFilterList.findIndex((value) => value === item);
+			if (result > -1) return;
+			setTagFilterList((prev) => prev.concat(item));
+			setTagFilterText('');
+		},
+		[tagFilterList],
+	);
+
+	/**
+	 * 絞り込むボタンを押下時のイベントハンドル
+	 */
+	const onClickTagFilterSearch = useCallback(() => {
+		const duplicateFilter = tagFilterList.filter((val, idx) => {
+			return tagFilterList.indexOf(val) === idx;
+		});
+		const result: ITodoItem[] = [];
+		const deppTodoList = [...todoList];
+		deppTodoList.map((row, rowIndex) => {
+			const deepRow = { ...row };
+			deepRow.todoItem.map((cell, cellIndex) => {
+				const deepCell = { ...cell };
+				deepCell.tag.map((item) => {
+					duplicateFilter.map((filterItem) => {
+						if (item === filterItem) {
+							result.push(deppTodoList[rowIndex].todoItem[cellIndex]);
+						}
+					});
+				});
+			});
+		});
+		const filterResult = result.filter((val, idx) => {
+			return result.indexOf(val) === idx;
+		});
+		setTagFilterResult(filterResult);
+		setIsTagFilter(false);
+		setTagFilterText('');
+		setTagFilterList([]);
+		setIsTagFilterSearchResult(true);
+	}, [todoList, tagFilterList]);
+
+	/**
+	 * 絞り込んでから閉じるボタンを押下時のイベントハンドル
+	 */
+	const onClickTagFilterResultClose = useCallback(() => {
+		setTagFilterResult([]);
+		setIsTagFilterSearchResult(false);
 	}, []);
 
 	return (
 		<div className="App">
+			{/* タスクモーダル */}
 			{isTaskModal ? (
-				<Modal isOpen={isTaskModal} style={customStyles}>
-					<div className="modal-main">
-						<input type="text" className="modal-input" />
-						<br />
-						<button type="button" className="btn modal-btn-tag-add" onClick={onClickTaskInput}>
-							+
-						</button>
-					</div>
-					<div className="modal-footer">
-						<button type="button" className="btn modal-btn-cancel" onClick={onClickCancel}>
-							Cancel
-						</button>
-						<button type="button" className="btn modal-btn-ok" onClick={onClickOK}>
-							OK
-						</button>
-					</div>
-				</Modal>
+				<ModalTask
+					isTaskModal={isTaskModal}
+					textTask={textTask}
+					onChangeTextTask={onChangeTextTask}
+					tag={tag}
+					onClickTagItemAdd={onClickTagItemAdd}
+					onClickCancel={onClickCancel}
+					onClickOK={onClickOK}
+				/>
 			) : (
 				<div />
 			)}
-			{isTagInputModal ? (
-				// <Modal isOpen={isTagInputModal} style={customStyles} shouldCloseOnOverlayClick onRequestClose={onRequestClose}>
-				<Modal isOpen={isTagInputModal} style={customStyles}>
-					<div className="modal-main">
-						<input type="text" className="modal-input" value={searchTag} onChange={onChangeSearchTag} />
-						<div className="modal-tag-input-content">
-							{tagList
-								.filter((item) => item.includes(searchTag) === true)
-								.map((item) => {
-									return (
-										<p className="modal-tag-item" key={`${item}`}>
-											{item}
-										</p>
-									);
-								})}
-						</div>
-					</div>
-					<div className="modal-footer">
-						<button type="button" className="btn modal-btn-ok" onClick={onClickTagCreate}>
-							作成
-						</button>
-					</div>
-				</Modal>
+			{/* タグモーダル */}
+			{isTagModal ? (
+				<ModalTag
+					isTagModal={isTagModal}
+					textTag={textTag}
+					onChangeTextTag={onChangeTextTag}
+					tagList={tagList}
+					onClickTagItem={onClickTagItem}
+					onClickTagCreate={onClickTagCreate}
+				/>
 			) : (
 				<div />
 			)}
+			{/* タグフィルターモーダル */}
+			{isTagFilter ? (
+				<ModalTagFilter
+					isTagFilter={isTagFilter}
+					tagList={tagList}
+					tagFilterList={tagFilterList}
+					tagFilterText={tagFilterText}
+					onChangeTagFilterText={onChangeTagFilterText}
+					onClickTagFilterItem={onClickTagFilterItem}
+					onClickTagFilterSearch={onClickTagFilterSearch}
+				/>
+			) : (
+				<div />
+			)}
+			{/* タグフィルター検索結果 */}
+			{isTagFilterSearchResult ? (
+				<ModalTagFilterSearchResult
+					isTagFilterSearchResult={isTagFilterSearchResult}
+					tagFilterResult={tagFilterResult}
+					onClickTagFilterResultClose={onClickTagFilterResultClose}
+				/>
+			) : (
+				<div />
+			)}
+
 			<header>
 				<h1>TODO管理アプリ</h1>
 			</header>
 			<main>
 				<div className="tag-filter-layout">
-					<button type="button" className="btn btn-tag-filter">
+					<button type="button" className="btn btn-tag-filter" onClick={onClickTagFilter}>
 						タグフィルター
 					</button>
 				</div>
-				<DndProvider backend={HTML5Backend}>
-					<div className="todo-layout">
-						{todoList.map((product, prodIndex) => {
-							return (
-								<div className="product" key={`product-${prodIndex.toString()}`}>
-									<h2>{product.title}</h2>
-									<div className="product-item">
-										{product.todoItem.map((item, itemIndex) => {
-											return (
-												<div
-													className={`content content-${prodIndex}`}
-													key={`product-${prodIndex.toString()}-${item.label}-content-${itemIndex.toString()}`}
-												>
-													<p>{item.label}</p>
-													<div className="tag">
-														{item.tag.map((tagItem, tagIndex) => {
-															return <p key={`tag-${tagItem}-${tagIndex.toString()}`}>{tagItem}</p>;
-														})}
-													</div>
-												</div>
-											);
-										})}
-									</div>
-									<button type="button" className="btn btn-add" onClick={onClickButtonAdd(prodIndex)}>
-										+
-									</button>
+				<div className="todo-layout">
+					{todoList.map((product, productIndex) => {
+						return (
+							<div className="product" key={`product-${productIndex.toString()}`}>
+								<h2>{product.title}</h2>
+								<div className="product-item">
+									{product.todoItem.map((item, itemIndex) => {
+										return (
+											<Card
+												key={`${item.label}-${itemIndex.toString}`}
+												productIndex={productIndex}
+												label={item.label}
+												itemIndex={itemIndex}
+												tag={item.tag}
+												setTodoList={setTodoList}
+											/>
+										);
+									})}
 								</div>
-							);
-						})}
-					</div>
-				</DndProvider>
+								<button type="button" className="btn btn-add" onClick={onClickButtonAdd(productIndex)}>
+									+
+								</button>
+							</div>
+						);
+					})}
+				</div>
 			</main>
 		</div>
 	);
